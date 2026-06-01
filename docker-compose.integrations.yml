@@ -1,0 +1,18 @@
+services:
+  ecommerce-api:
+    image: wiremock/wiremock:latest
+    container_name: payment-connector-ecommerce-api
+    command:
+      - "--global-response-templating"
+      - "--verbose"
+    ports:
+      - "8090:8080"
+    volumes:
+      - ./integrations/wiremock/ecommerce:/home/wiremock:ro
+
+  payment-gateway:
+    image: stripe/stripe-mock:latest
+    container_name: payment-connector-stripe-mock
+    ports:
+      - "12111:12111"
+      - "12112:12112"

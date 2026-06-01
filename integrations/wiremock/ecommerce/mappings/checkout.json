@@ -1,0 +1,27 @@
+{
+  "mappings": [
+    {
+      "id": "37050373-1721-483e-94e2-ee1f245c178f",
+      "name": "Create checkout session",
+      "request": {
+        "method": "POST",
+        "urlPath": "/checkout/sessions"
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "id": "chk_{{randomValue length=12 type='ALPHANUMERIC'}}",
+          "order_id": "{{jsonPath request.body '$.order_id'}}",
+          "status": "created",
+          "currency": "BRL",
+          "amount": "{{jsonPath request.body '$.amount'}}",
+          "success_url": "{{jsonPath request.body '$.success_url'}}",
+          "cancel_url": "{{jsonPath request.body '$.cancel_url'}}"
+        }
+      }
+    }
+  ]
+}

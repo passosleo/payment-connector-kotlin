@@ -1,0 +1,59 @@
+{
+  "mappings": [
+    {
+      "id": "087fc2ec-7b92-4cf6-a90c-0906cb93cad4",
+      "name": "Create order",
+      "request": {
+        "method": "POST",
+        "urlPath": "/orders"
+      },
+      "response": {
+        "status": 201,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "id": "ord_{{randomValue length=12 type='ALPHANUMERIC'}}",
+          "status": "pending_payment",
+          "currency": "BRL",
+          "total_amount": "{{jsonPath request.body '$.total_amount'}}",
+          "customer_email": "{{jsonPath request.body '$.customer_email'}}",
+          "payment": null
+        }
+      }
+    },
+    {
+      "id": "fc6d8584-8752-4de6-9f12-22f8fe2c730c",
+      "name": "Get order by id",
+      "request": {
+        "method": "GET",
+        "urlPathTemplate": "/orders/{orderId}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "id": "{{request.path.orderId}}",
+          "status": "pending_payment",
+          "currency": "BRL",
+          "total_amount": 32980,
+          "customer_email": "cliente@example.com",
+          "items": [
+            {
+              "product_id": "prod_camiseta_basic",
+              "quantity": 1,
+              "unit_amount": 7990
+            },
+            {
+              "product_id": "prod_tenis_runner",
+              "quantity": 1,
+              "unit_amount": 24990
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

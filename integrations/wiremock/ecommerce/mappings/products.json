@@ -1,0 +1,57 @@
+{
+  "mappings": [
+    {
+      "id": "9b1a3850-1b89-4b3b-8c73-0c7c78ce4c01",
+      "name": "List products",
+      "request": {
+        "method": "GET",
+        "urlPath": "/products"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "products": [
+            {
+              "id": "prod_camiseta_basic",
+              "title": "Camiseta Basic",
+              "currency": "BRL",
+              "unit_amount": 7990,
+              "inventory_quantity": 25
+            },
+            {
+              "id": "prod_tenis_runner",
+              "title": "Tenis Runner",
+              "currency": "BRL",
+              "unit_amount": 24990,
+              "inventory_quantity": 10
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "1ad2259f-0e1f-4559-9cc4-d2e20912a87b",
+      "name": "Get product by id",
+      "request": {
+        "method": "GET",
+        "urlPathTemplate": "/products/{productId}"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "jsonBody": {
+          "id": "{{request.path.productId}}",
+          "title": "Produto fake",
+          "currency": "BRL",
+          "unit_amount": 12990,
+          "inventory_quantity": 15
+        }
+      }
+    }
+  ]
+}
