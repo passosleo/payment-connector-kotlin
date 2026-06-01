@@ -9,6 +9,9 @@ O objetivo do projeto é exercitar o desenho de uma integração intermediária:
 - Kotlin
 - Spring Boot
 - Gradle Kotlin DSL
+- Spring Data JPA
+- Flyway
+- PostgreSQL
 - Docker Compose para dependências fake de integração
 
 ## Rodando a aplicação
@@ -23,8 +26,8 @@ Por padrão, a API sobe em:
 http://localhost:8085
 ```
 
-## Ambiente local de integração
+## Ambiente local de desenvolvimento
 
-O projeto inclui um ambiente local com ecommerce fake e gateway de pagamento fake para desenvolvimento e testes manuais.
+O projeto inclui um ambiente local com PostgreSQL, ecommerce fake e gateway de pagamento fake para desenvolvimento e testes manuais.
 
 Veja o guia completo em [integrations/README.md](integrations/README.md).

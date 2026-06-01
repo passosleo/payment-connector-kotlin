@@ -1,4 +1,16 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: payment-connector-postgres
+    environment:
+      POSTGRES_DB: payment_connector
+      POSTGRES_USER: payment_connector
+      POSTGRES_PASSWORD: payment_connector
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
   ecommerce-api:
     image: wiremock/wiremock:latest
     container_name: payment-connector-ecommerce-api
@@ -16,3 +28,6 @@ services:
     ports:
       - "12111:12111"
       - "12112:12112"
+
+volumes:
+  postgres_data:

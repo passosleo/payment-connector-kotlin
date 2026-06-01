@@ -1,15 +1,16 @@
-# Integrações locais
+# Ambiente local de desenvolvimento
 
-Este diretório guarda serviços fake para desenvolver o `payment-connector` sem depender de sistemas externos.
+Este diretório guarda a configuração dos serviços fake usados no desenvolvimento do `payment-connector`.
 
-## Subir ecommerce fake + gateway fake
+## Subir banco + ecommerce fake + gateway fake
 
 ```bash
-docker compose -f docker-compose.integrations.yml up -d
+docker compose -f docker-compose.dev.yml up -d
 ```
 
 Endpoints:
 
+- PostgreSQL: `localhost:5432`
 - Ecommerce fake REST: `http://localhost:8090`
 - Stripe mock HTTP: `http://localhost:12111`
 - Stripe mock HTTPS: `https://localhost:12112`
@@ -33,6 +34,9 @@ curl -X POST http://localhost:12111/v1/payment_intents \
 Para a aplicação Kotlin, os valores locais esperados são:
 
 ```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/payment_connector
+spring.datasource.username=payment_connector
+spring.datasource.password=payment_connector
 integrations.ecommerce.base-url=http://localhost:8090
 integrations.payment-gateway.base-url=http://localhost:12111
 ```
