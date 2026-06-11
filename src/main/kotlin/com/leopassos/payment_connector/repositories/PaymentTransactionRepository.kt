@@ -1,5 +1,6 @@
-package com.leopassos.payment_connector.payment
+package com.leopassos.payment_connector.repositories
 
+import com.leopassos.payment_connector.entities.PaymentTransaction
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 

@@ -1,4 +1,4 @@
-package com.leopassos.payment_connector.payment
+package com.leopassos.payment_connector.enums
 
 enum class PaymentTransactionStatus {
     PENDING,
