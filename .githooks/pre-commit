@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if ! command -v java >/dev/null 2>&1 && [ -f "$HOME/.bashrc" ]; then
+  # Load local JAVA_HOME/PATH for GUI terminals or shells that did not source it.
+  # shellcheck disable=SC1090
+  source "$HOME/.bashrc" || true
+fi
+
+staged_files=()
+while IFS= read -r -d '' file; do
+  staged_files+=("$file")
+done < <(git diff --cached --name-only -z --diff-filter=ACMR -- "*.kt" "*.kts")
+
+if [ "${#staged_files[@]}" -eq 0 ]; then
+  exit 0
+fi
+
+./gradlew spotlessApply spotlessCheck
+git add -- "${staged_files[@]}"

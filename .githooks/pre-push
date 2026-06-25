@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(git rev-parse --show-toplevel)"
+cd "$repo_root"
+
+if ! command -v java >/dev/null 2>&1 && [ -f "$HOME/.bashrc" ]; then
+  # Load local JAVA_HOME/PATH for GUI terminals or shells that did not source it.
+  # shellcheck disable=SC1090
+  source "$HOME/.bashrc" || true
+fi
+
+./gradlew check

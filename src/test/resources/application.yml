@@ -1,0 +1,33 @@
+# Database
+spring:
+  datasource:
+    url: jdbc:h2:mem:payment_connector;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: validate
+
+  # Database migrations
+  flyway:
+    enabled: true
+
+# External integrations
+integrations:
+  ecommerce:
+    base-url: http://localhost:8090
+    connect-timeout: 2s
+    read-timeout: 5s
+    retry:
+      max-attempts: 3
+      backoff: 200ms
+  payment-gateway:
+    base-url: http://localhost:12111
+    connect-timeout: 1s
+    read-timeout: 3s
+    retry:
+      max-attempts: 2
+      backoff: 100ms

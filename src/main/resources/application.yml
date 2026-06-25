@@ -1,0 +1,63 @@
+# Application
+spring:
+  application:
+    name: payment-connector
+
+  # Database
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment_connector
+    username: payment_connector
+    password: payment_connector
+    driver-class-name: org.postgresql.Driver
+
+    # Connection pool
+    hikari:
+      pool-name: payment-connector-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 3000
+      validation-timeout: 1000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  # JPA
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Database migrations
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+# OpenAPI
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+
+# Server
+server:
+  port: 8085
+
+# External integrations
+integrations:
+  ecommerce:
+    base-url: http://localhost:8090
+    connect-timeout: 2s
+    read-timeout: 5s
+    retry:
+      max-attempts: 3
+      backoff: 200ms
+  payment-gateway:
+    base-url: http://localhost:12111
+    connect-timeout: 1s
+    read-timeout: 3s
+    retry:
+      max-attempts: 2
+      backoff: 100ms
