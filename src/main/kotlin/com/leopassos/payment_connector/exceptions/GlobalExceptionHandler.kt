@@ -5,6 +5,7 @@ import com.leopassos.payment_connector.dtos.connector.response.ErrorResponseDTO
 import com.leopassos.payment_connector.dtos.connector.response.error
 import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.ResponseException
+import io.ktor.serialization.JsonConvertException
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpMediaTypeNotAcceptableException
@@ -72,6 +73,21 @@ class GlobalExceptionHandler {
     fun handleKtorTransportException(exception: Exception): ResponseEntity<ErrorResponseDTO> {
         return buildResponse(
             error = Errors.EXTERNAL_API_ERROR,
+            exception = exception,
+        )
+    }
+
+    /**
+     * Trata respostas inválidas ou incompatíveis retornadas por APIs externas chamadas via Ktor.
+     *
+     * @param exception exceção lançada durante a conversão do corpo da resposta externa.
+     * @return resposta de bad gateway sem expor o payload externo.
+     */
+    @ExceptionHandler(JsonConvertException::class)
+    fun handleKtorJsonConvertException(exception: JsonConvertException): ResponseEntity<ErrorResponseDTO> {
+        return buildResponse(
+            error = Errors.EXTERNAL_API_ERROR,
+            details = mapOf("reason" to "invalidExternalResponse"),
             exception = exception,
         )
     }
@@ -305,7 +321,7 @@ class GlobalExceptionHandler {
 
         if (error.status.is5xxServerError) {
             log.error(
-                "Unhandled exception mapped to API error. status={}, code={}, message={}, detailsKeys={}",
+                "Handled exception mapped to API error. status={}, code={}, message={}, detailsKeys={}",
                 error.status.value(),
                 error.code,
                 message,
