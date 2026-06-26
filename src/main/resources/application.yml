@@ -58,6 +58,7 @@ integrations:
     base-url: http://localhost:12111
     connect-timeout: 1s
     read-timeout: 3s
+    bearer-token: ${PAYMENT_GATEWAY_BEARER_TOKEN:sk_test_local}
     retry:
       max-attempts: 2
       backoff: 100ms

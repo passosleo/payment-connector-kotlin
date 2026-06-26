@@ -14,6 +14,8 @@ group = "com.leopassos"
 
 version = "0.0.1-SNAPSHOT"
 
+val ktorVersion = "3.3.3"
+
 java {
     toolchain {
         languageVersion = JavaLanguageVersion.of(21)
@@ -33,6 +35,9 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("tools.jackson.module:jackson-module-kotlin")
+    implementation("io.ktor:ktor-client-cio:$ktorVersion")
+    implementation("io.ktor:ktor-client-content-negotiation:$ktorVersion")
+    implementation("io.ktor:ktor-serialization-jackson:$ktorVersion")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     // Runtime

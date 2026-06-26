@@ -3,6 +3,8 @@ package com.leopassos.payment_connector.exceptions
 import com.leopassos.payment_connector.configuration.logger
 import com.leopassos.payment_connector.dtos.connector.response.ErrorResponseDTO
 import com.leopassos.payment_connector.dtos.connector.response.error
+import io.ktor.client.plugins.HttpRequestTimeoutException
+import io.ktor.client.plugins.ResponseException
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.web.HttpMediaTypeNotAcceptableException
@@ -15,6 +17,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.NoHandlerFoundException
+import java.io.IOException
 
 private val log = logger<GlobalExceptionHandler>()
 
@@ -45,19 +48,30 @@ class GlobalExceptionHandler {
     }
 
     /**
-     * Trata falhas de comunicação com APIs externas chamadas pelos clients HTTP.
+     * Trata respostas HTTP de erro retornadas por APIs externas chamadas via Ktor.
      *
-     * @param exception exceção com o nome da integração e o status externo, quando disponível.
-     * @return resposta de bad gateway com detalhes mínimos da integração externa.
+     * @param exception exceção com status retornado pela API externa.
+     * @return resposta de bad gateway com status externo nos detalhes.
      */
-    @ExceptionHandler(ExternalApiException::class)
-    fun handleExternalApiException(exception: ExternalApiException): ResponseEntity<ErrorResponseDTO> {
-        val details = mutableMapOf("integration" to exception.integrationName)
-        exception.externalStatusCode?.let { details["externalStatusCode"] = it.toString() }
-
+    @ExceptionHandler(ResponseException::class)
+    fun handleKtorResponseException(exception: ResponseException): ResponseEntity<ErrorResponseDTO> {
         return buildResponse(
             error = Errors.EXTERNAL_API_ERROR,
-            details = details,
+            details = mapOf("externalStatusCode" to exception.response.status.value.toString()),
+            exception = exception,
+        )
+    }
+
+    /**
+     * Trata falhas de transporte ao chamar APIs externas via Ktor.
+     *
+     * @param exception exceção de timeout ou I/O.
+     * @return resposta de bad gateway sem expor detalhes sensíveis.
+     */
+    @ExceptionHandler(HttpRequestTimeoutException::class, IOException::class)
+    fun handleKtorTransportException(exception: Exception): ResponseEntity<ErrorResponseDTO> {
+        return buildResponse(
+            error = Errors.EXTERNAL_API_ERROR,
             exception = exception,
         )
     }

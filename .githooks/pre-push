@@ -10,4 +10,4 @@ if ! command -v java >/dev/null 2>&1 && [ -f "$HOME/.bashrc" ]; then
   source "$HOME/.bashrc" || true
 fi
 
-./gradlew check
+./gradlew spotlessCheck test

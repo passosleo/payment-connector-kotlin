@@ -19,5 +19,32 @@ if [ "${#staged_files[@]}" -eq 0 ]; then
   exit 0
 fi
 
-./gradlew spotlessApply spotlessCheck
+gradle_tasks=(spotlessApply spotlessCheck)
+
+run_main_compile=false
+run_test_compile=false
+
+for file in "${staged_files[@]}"; do
+  case "$file" in
+    *.gradle.kts|settings.gradle.kts|src/main/kotlin/*)
+      run_main_compile=true
+      ;;
+  esac
+
+  case "$file" in
+    *.gradle.kts|settings.gradle.kts|src/test/kotlin/*)
+      run_test_compile=true
+      ;;
+  esac
+done
+
+if [ "$run_main_compile" = true ]; then
+  gradle_tasks+=(compileKotlin)
+fi
+
+if [ "$run_test_compile" = true ]; then
+  gradle_tasks+=(compileTestKotlin)
+fi
+
+./gradlew "${gradle_tasks[@]}"
 git add -- "${staged_files[@]}"

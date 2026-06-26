@@ -1,11 +1,12 @@
 package com.leopassos.payment_connector.clients
 
-import com.leopassos.payment_connector.exceptions.ExternalApiException
 import com.sun.net.httpserver.HttpServer
+import io.ktor.client.call.body
+import io.ktor.client.plugins.ClientRequestException
+import io.ktor.client.request.get
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
-import org.springframework.web.service.annotation.GetExchange
-import org.springframework.web.service.annotation.HttpExchange
 import java.net.InetSocketAddress
 import java.time.Duration
 import kotlin.test.assertEquals
@@ -21,7 +22,37 @@ class HttpClientFactoryTest {
     }
 
     @Test
-    fun `wraps external api response errors preserving status code and response body`() {
+    fun `creates ktor client with bearer authentication`() {
+        server = HttpServer.create(InetSocketAddress(0), 0).apply {
+            createContext("/authorized") { exchange ->
+                assertEquals("Bearer sk_test_unit", exchange.requestHeaders.getFirst("Authorization"))
+
+                val responseBody = "authorized"
+                exchange.sendResponseHeaders(200, responseBody.toByteArray().size.toLong())
+                exchange.responseBody.use { it.write(responseBody.toByteArray()) }
+            }
+            start()
+        }
+
+        val client = HttpClientFactory().createClient(
+            ClientProperties().apply {
+                baseUrl = "http://localhost:${server!!.address.port}"
+                bearerToken = "sk_test_unit"
+                connectTimeout = Duration.ofSeconds(1)
+                readTimeout = Duration.ofSeconds(1)
+            },
+        )
+
+        val response = runBlocking {
+            client.get("/authorized").body<String>()
+        }
+
+        assertEquals("authorized", response)
+        client.close()
+    }
+
+    @Test
+    fun `propagates external api response errors from ktor client`() {
         server = HttpServer.create(InetSocketAddress(0), 0).apply {
             createContext("/failure") { exchange ->
                 val responseBody = """{"error":"invalid request"}"""
@@ -32,28 +63,20 @@ class HttpClientFactoryTest {
         }
 
         val client = HttpClientFactory().createClient(
-            TestExternalClient::class.java,
             ClientProperties().apply {
                 baseUrl = "http://localhost:${server!!.address.port}"
                 connectTimeout = Duration.ofSeconds(1)
                 readTimeout = Duration.ofSeconds(1)
-                retry.maxAttempts = 1
             },
         )
 
-        val exception = assertFailsWith<ExternalApiException> {
-            client.failure()
+        val exception = assertFailsWith<ClientRequestException> {
+            runBlocking {
+                client.get("/failure").body<String>()
+            }
         }
 
-        assertEquals("TestExternalClient", exception.integrationName)
-        assertEquals(422, exception.externalStatusCode)
-        assertEquals("""{"error":"invalid request"}""", exception.responseBody)
-    }
-
-    @HttpExchange
-    private interface TestExternalClient {
-
-        @GetExchange("/failure")
-        fun failure(): String
+        assertEquals(422, exception.response.status.value)
+        client.close()
     }
 }

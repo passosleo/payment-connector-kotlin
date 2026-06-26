@@ -138,35 +138,35 @@ Os testes usam `src/test/resources/application.yml`, com H2 em memória configur
 
 ## Clients HTTP
 
-O pacote `clients` concentra integrações HTTP externas. O padrão usado no projeto é client declarativo do Spring com
-`RestClient` por baixo e interfaces anotadas com `@HttpExchange`, `@GetExchange` e `@PostExchange`.
+O pacote `clients` concentra integrações HTTP externas. O padrão usado no projeto é Ktor Client com contratos simples em
+Kotlin e implementações pequenas por integração.
 
 Organização:
 
 ```text
 clients/
-├── ClientProperties.kt       # propriedades comuns de baseUrl, timeout e retry
-├── ExternalHttpLogger.kt     # logs seguros das chamadas externas
-├── HttpClientFactory.kt      # cria proxies declarativos com timeout, retry e tradução de erros
+├── ClientAuthenticator.kt    # autenticação fixa ou gerada por request
+├── ClientProperties.kt       # propriedades comuns de baseUrl, headers, timeout e retry
+├── HttpClientFactory.kt      # cria HttpClient Ktor configurado
 ├── ecommerce/                # client e configuração da API de ecommerce
 └── paymentgateway/           # client e configuração do gateway de pagamento
 ```
 
 Para criar uma nova integração:
 
-- declare uma interface no subpacote da integração, com os endpoints anotados
+- declare uma interface de contrato no subpacote da integração
+- implemente a interface com Ktor Client
 - crie uma classe `Config` com um bean `@ConfigurationProperties`
-- configure a integração em `application.yml` usando `base-url`, `connect-timeout`, `read-timeout` e `retry`
-- crie o bean do client chamando `HttpClientFactory.createClient(...)`
+- configure a integração em `application.yml` usando `base-url`, `connect-timeout`, `read-timeout`, `bearer-token`,
+  `headers` e `retry`
+- crie um bean `HttpClient` com `HttpClientFactory.createClient(...)`
+- crie o bean do client usando a implementação Ktor da integração
 
 Exemplo:
 
 ```kotlin
-@HttpExchange
 interface EcommerceClient {
-
-    @GetExchange("/orders/{orderId}")
-    fun getOrder(@PathVariable orderId: String): EcommerceOrderResponseDTO
+    fun getOrder(orderId: String): EcommerceOrderResponseDTO
 }
 ```
 
@@ -183,31 +183,37 @@ integrations:
       backoff: 200ms
 ```
 
+Quando a API externa exigir autenticação bearer, configure `bearer-token` no prefixo da integração. Prefira variável de
+ambiente para não versionar segredo real:
+
+```yaml
+integrations:
+  payment-gateway:
+    base-url: http://localhost:12111
+    bearer-token: ${PAYMENT_GATEWAY_BEARER_TOKEN:sk_test_local}
+```
+
 O `HttpClientFactory` aplica:
 
 - timeout de conexão e leitura por integração
-- retry para falhas transitórias de conectividade
-- retry para respostas `5xx` enquanto houver tentativas disponíveis
-- logs estruturados e sanitizados via `ExternalHttpLogger`
-- tradução de falhas do `RestClient` para `ExternalApiException`
+- headers fixos por integração
+- header `Authorization: Bearer ...` quando `bearer-token` estiver configurado
+- autenticação customizada por `ClientAuthenticator`, quando o token precisar ser gerado programaticamente
+- retry para falhas transitórias e respostas `5xx`
+- content negotiation JSON via Jackson
+- criação do `HttpClient` Ktor usado pela implementação da integração
 
-Erros `4xx` retornados pela API externa não são retentados. Erros `5xx` são retentados até `retry.max-attempts`.
-Quando as tentativas acabam, ou quando a falha não é retentável, a exceção lançada pelo client é convertida em
-`ExternalApiException`.
+Para tokens gerados em runtime, passe um autenticador customizado:
 
-A `ExternalApiException` preserva:
+```kotlin
+httpClientFactory.createClient(
+    properties = properties,
+    authenticator = ClientAuthenticator.bearer { tokenProvider.currentToken() },
+)
+```
 
-- nome do client/integração
-- status HTTP retornado pela API externa, quando existir
-- corpo retornado pela API externa para diagnóstico interno
-
-O `GlobalExceptionHandler` converte essa exception para a resposta padronizada `ERR012` com status `502 Bad Gateway`.
-O corpo da API externa não é repassado ao consumidor da API; apenas `integration` e `externalStatusCode` entram em
-`details`.
-
-Os logs dos clients HTTP não registram corpo de request ou response. URLs são registradas sem query string, fragmento ou
-user-info para evitar vazamento de tokens, credenciais e outros dados sensíveis.
-
+Erros do Ktor Client são tratados pelo `GlobalExceptionHandler`. Respostas HTTP de erro de APIs externas viram
+`ERR012`/`502 Bad Gateway`, preservando `externalStatusCode` em `details`.
 ---
 
 ## OpenAPI/Swagger
@@ -324,7 +330,8 @@ O `GlobalExceptionHandler` converte exceções em `ErrorResponseDTO`.
 Ele trata, entre outros:
 
 - `ApplicationException`
-- `ExternalApiException`
+- erros de APIs externas com `ResponseException` do Ktor
+- falhas de transporte com `HttpRequestTimeoutException` ou `IOException`
 - erros de validação com `MethodArgumentNotValidException`
 - corpo malformado com `HttpMessageNotReadableException`
 - parâmetro ausente
@@ -333,9 +340,8 @@ Ele trata, entre outros:
 - media type não suportado
 - erro inesperado
 
-Falhas de APIs externas devem ser propagadas como `ExternalApiException`, geralmente pela `HttpClientFactory`. Essa
-exception mantém o status retornado pela integração em `externalStatusCode`, quando disponível, e é respondida pela API
-como `ERR012`/`502 Bad Gateway`.
+Falhas de APIs externas chamadas com Ktor Client são respondidas como `ERR012`/`502 Bad Gateway`. Quando a API externa
+retorna status HTTP, o status é incluído em `details.externalStatusCode`.
 
 Política de logs do handler:
 
@@ -501,8 +507,9 @@ git config core.hooksPath .githooks
 Hooks disponíveis:
 
 - `pre-commit`: roda `./gradlew spotlessApply spotlessCheck` quando há arquivos Kotlin ou Gradle Kotlin DSL staged, e
-  adiciona novamente os arquivos formatados ao commit
-- `pre-push`: roda `./gradlew check` antes de enviar commits para o remoto
+  adiciona novamente os arquivos formatados ao commit; também roda `compileKotlin` e/ou `compileTestKotlin` quando os
+  arquivos staged exigirem validação de compilação
+- `pre-push`: roda `./gradlew spotlessCheck test` antes de enviar commits para o remoto
 
 ---
 
